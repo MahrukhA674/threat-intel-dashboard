@@ -1,4 +1,3 @@
-cat > README.md << 'EOF'
 # Threat Intelligence Dashboard
 
 A comprehensive threat intelligence platform for security operations.
