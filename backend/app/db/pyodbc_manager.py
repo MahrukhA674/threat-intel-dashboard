@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime, timedelta
 import os
+import traceback
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -59,8 +60,9 @@ class PyODBCConnectionManager:
             autocommit: Enable autocommit mode (default: True)
         """
         # Load from environment variables if not provided
-        self.driver = driver or os.getenv("ODBC_DRIVER", "ODBC Driver 17 for SQL Server")
+        self.driver = driver or os.getenv("ODBC_DRIVER", "PostgreSQL Unicode")
         self.server = server or os.getenv("DB_SERVER", "localhost")
+        self.port = os.getenv("POSTGRES_PORT", "5432")
         self.database = database or os.getenv("DB_NAME", "threat_intel_db")
         self.username = username or os.getenv("DB_USERNAME", "threat_user")
         self.password = password or os.getenv("DB_PASSWORD", "threat_pass_2024")
@@ -71,14 +73,14 @@ class PyODBCConnectionManager:
         self.recycle_time = recycle_time
         self.autocommit = autocommit
         
-        # Build connection string
+        # Build connection string for PostgreSQL
         self.connection_string = (
             f"DRIVER={{{self.driver}}};"
             f"SERVER={self.server};"
+            f"PORT={self.port};"
             f"DATABASE={self.database};"
             f"UID={self.username};"
             f"PWD={self.password};"
-            f"TrustServerCertificate=yes;"
         )
         
         # queue of available connections
@@ -87,15 +89,21 @@ class PyODBCConnectionManager:
 
        
         
-        # Initialize pool
-        self.initialize_pool()
-        
         logger.info(
             f"PyODBCConnectionManager initialized: "
             f"server={self.server}, database={self.database}, "
             f"pool_size={pool_size}, max_pool_size={max_pool_size}, "
             f"autocommit={autocommit}"
         )
+        
+    def _create_connection(self, autocommit: bool = True) -> pyodbc.Connection:
+        """Create a new database connection."""
+        try:
+            conn = pyodbc.connect(self.connection_string, autocommit=autocommit)
+            return conn
+        except Exception as e:
+            logger.error(f"Error creating connection: {e}")
+            raise
     
    
            

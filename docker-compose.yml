@@ -45,6 +45,22 @@ services:
       retries: 5
     restart: unless-stopped
 
+  backend:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    container_name: threat_intel_backend
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - threat_network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
     driver: local
