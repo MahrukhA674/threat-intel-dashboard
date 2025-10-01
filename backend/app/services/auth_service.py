@@ -5,11 +5,11 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from ..core.config import settings
-from ..models.models import User
-from ..schemas.schemas import TokenData, UserCreate
-from ..db.database import get_db
-from ..db.redis_client import redis_client
+from app.core.config import settings
+from app.models.models import User
+from app.schemas.schemas import TokenData, UserCreate
+from app.db.database import get_db
+from app.db.redis_client import redis_client
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")

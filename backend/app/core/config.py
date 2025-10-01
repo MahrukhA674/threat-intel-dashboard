@@ -1,21 +1,38 @@
+from pydantic_settings import BaseSettings
+from typing import Optional
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
+class Settings(BaseSettings):
+    # Application settings
+    API_V1_STR: str = "/api/v1"
+    PROJECT_NAME: str = "Threat Intelligence Dashboard"
 
-class Settings:
-    # Database
-    POSTGRES_USER = os.getenv("POSTGRES_USER", "threat_user")
-    POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "threat_pass_2024")
-    POSTGRES_DB = os.getenv("POSTGRES_DB", "threat_intel_db")
-    POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
-    POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
-    
-    # ODBC
-    ODBC_DRIVER = os.getenv("ODBC_DRIVER", "PostgreSQL Unicode")
-    DB_SERVER = os.getenv("DB_SERVER", "localhost")
-    DB_NAME = os.getenv("DB_NAME", "threat_intel_db")
-    DB_USERNAME = os.getenv("DB_USERNAME", "threat_user")
-    DB_PASSWORD = os.getenv("DB_PASSWORD", "threat_pass_2024")
+    # Security settings
+    SECRET_KEY: str = os.getenv("SECRET_KEY")
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
+    # Database settings
+    DATABASE_URL: str = os.getenv("DATABASE_URL")
+
+    # Redis settings
+    REDIS_HOST: str = os.getenv("REDIS_HOST", "redis")
+    REDIS_PORT: int = int(os.getenv("REDIS_PORT", "6379"))
+    REDIS_DB: int = int(os.getenv("REDIS_DB", "0"))
+    REDIS_PASSWORD: Optional[str] = os.getenv("REDIS_PASSWORD")
+
+    # External API settings
+    NVD_API_URL: str = os.getenv("NVD_API_URL", "https://services.nvd.nist.gov/rest/json/cves/2.0")
+    NVD_API_KEY: Optional[str] = os.getenv("NVD_API_KEY")
+
+    ABUSEIPDB_API_URL: str = os.getenv("ABUSEIPDB_API_URL", "https://api.abuseipdb.com/api/v2")
+    ABUSEIPDB_API_KEY: Optional[str] = os.getenv("ABUSEIPDB_API_KEY")
+
+    OTX_API_URL: str = os.getenv("OTX_API_URL", "https://otx.alienvault.com/api/v1")
+    OTX_API_KEY: Optional[str] = os.getenv("OTX_API_KEY")
+
+    class Config:
+        case_sensitive = True
 settings = Settings()

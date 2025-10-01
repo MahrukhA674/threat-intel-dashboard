@@ -1,31 +1,30 @@
 version: '3.8'
 
 services:
-  # PostgreSQL Database
-  postgres:
-    image: postgres:15-alpine
-    container_name: threat_intel_db
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: db
     env_file:
       - .env
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      ACCEPT_EULA: Y
+      SA_PASSWORD: ${DB_PASSWORD}
+      MSSQL_PID: Developer
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${DB_PORT:-1433}:1433"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - sqlserver_data:/var/opt/mssql
+      - ./scripts/init.sql:/scripts/init.sql
+      - ./docker-entrypoint-init.sh:/docker-entrypoint-init.sh
     networks:
       - threat_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"${DB_PASSWORD}\" -d master -Q \"SELECT 1\" -C"]
       interval: 10s
       timeout: 5s
       retries: 5
     restart: unless-stopped
 
-  # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: threat_intel_redis
@@ -52,17 +51,21 @@ services:
     container_name: threat_intel_backend
     env_file:
       - .env
+    environment:
+      - PYTHONPATH=/app
     ports:
       - "8000:8000"
     depends_on:
-      - postgres
-      - redis
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - threat_network
     restart: unless-stopped
 
 volumes:
-  postgres_data:
+  sqlserver_data:
     driver: local
   redis_data:
     driver: local

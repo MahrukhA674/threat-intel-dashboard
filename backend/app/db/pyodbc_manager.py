@@ -1,4 +1,3 @@
-
 import asyncio
 import pyodbc
 import threading
@@ -60,12 +59,12 @@ class PyODBCConnectionManager:
             autocommit: Enable autocommit mode (default: True)
         """
         # Load from environment variables if not provided
-        self.driver = driver or os.getenv("ODBC_DRIVER", "PostgreSQL Unicode")
+        self.driver = driver or os.getenv("ODBC_DRIVER", "ODBC Driver 18 for SQL Server")
         self.server = server or os.getenv("DB_SERVER", "localhost")
-        self.port = os.getenv("POSTGRES_PORT", "5432")
-        self.database = database or os.getenv("DB_NAME", "threat_intel_db")
-        self.username = username or os.getenv("DB_USERNAME", "threat_user")
-        self.password = password or os.getenv("DB_PASSWORD", "threat_pass_2024")
+        self.port = os.getenv("DB_PORT")
+        self.database = database or os.getenv("DB_NAME")
+        self.username = username or os.getenv("DB_USERNAME")
+        self.password = password or os.getenv("DB_PASSWORD")
         
         self.pool_size = pool_size
         self.max_pool_size = max_pool_size
@@ -73,7 +72,7 @@ class PyODBCConnectionManager:
         self.recycle_time = recycle_time
         self.autocommit = autocommit
         
-        # Build connection string for PostgreSQL
+        # Build connection string forSQL
         self.connection_string = (
             f"DRIVER={{{self.driver}}};"
             f"SERVER={self.server};"
@@ -95,6 +94,11 @@ class PyODBCConnectionManager:
             f"pool_size={pool_size}, max_pool_size={max_pool_size}, "
             f"autocommit={autocommit}"
         )
+
+
+
+
+
         
     def _create_connection(self, autocommit: bool = True) -> pyodbc.Connection:
         """Create a new database connection."""
@@ -199,4 +203,6 @@ class PyODBCConnectionManager:
             raise
         finally:
             await self._release_connection(conn)
-        
+
+
+

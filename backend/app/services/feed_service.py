@@ -3,7 +3,7 @@ import aiohttp
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
-from ..core.config import settings
+from app.core.config import settings
 from ..models.models import CVE, IPThreat, OTXThreat, ThreatIntel
 from ..db.redis_client import redis_client
 from .cache_service import CacheService

@@ -1,131 +1,143 @@
--- PostgreSQL Database Initialization Script
+IF NOT EXISTS (SELECT name FROM master.dbo.sysdatabases WHERE name = N'threat_intel_db')
+BEGIN
+  CREATE DATABASE [threat_intel_db];
+END;
+GO
 
--- Generate unique UUIDs and secure password hashes
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-
--- Users table
-CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(100) UNIQUE NOT NULL,
-    email VARCHAR(255) UNIQUE,
-    hashed_password VARCHAR(255) NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
-    is_admin BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+USE [threat_intel_db];
+GO
+-- USERS TABLE
+CREATE TABLE users (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    username NVARCHAR(100) UNIQUE NOT NULL,
+    email NVARCHAR(255) UNIQUE,
+    hashed_password NVARCHAR(255) NOT NULL,
+    is_active BIT DEFAULT 1,
+    is_admin BIT DEFAULT 0,
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE()
 );
 
 CREATE INDEX idx_users_username ON users(username);
 
--- CVE Data table
-CREATE TABLE IF NOT EXISTS cve_data (
-    id VARCHAR(50) PRIMARY KEY,
-    description TEXT,
-    severity VARCHAR(20),
+-- CVE DATA TABLE
+CREATE TABLE cve_data (
+    id NVARCHAR(50) PRIMARY KEY,
+    description NVARCHAR(MAX),
+    severity NVARCHAR(20),
     cvss_score DECIMAL(3,1),
-    published_date TIMESTAMP,
-    last_modified TIMESTAMP,
-    references JSONB,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    published_date DATETIME,
+    last_modified DATETIME,
+    references NVARCHAR(MAX),
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE()
 );
 
 CREATE INDEX idx_cve_severity ON cve_data(severity);
 CREATE INDEX idx_cve_cvss_score ON cve_data(cvss_score DESC);
 
--- IP Threats table
-CREATE TABLE IF NOT EXISTS ip_threats (
-    id SERIAL PRIMARY KEY,
-    ip_address INET UNIQUE NOT NULL,
-    abuse_score INTEGER CHECK (abuse_score >= 0 AND abuse_score <= 100),
-    country VARCHAR(10),
-    usage_type VARCHAR(100),
-    isp VARCHAR(255),
-    total_reports INTEGER DEFAULT 0,
-    last_reported TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- IP THREATS TABLE
+CREATE TABLE ip_threats (
+    id INT IDENTITY(1,1) PRIMARY KEY,
+    ip_address NVARCHAR(45) UNIQUE NOT NULL,
+    abuse_score INT CHECK (abuse_score BETWEEN 0 AND 100),
+    country NVARCHAR(10),
+    usage_type NVARCHAR(100),
+    isp NVARCHAR(255),
+    total_reports INT DEFAULT 0,
+    last_reported DATETIME,
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE()
 );
 
 CREATE INDEX idx_ip_address ON ip_threats(ip_address);
 CREATE INDEX idx_ip_abuse_score ON ip_threats(abuse_score DESC);
 
--- OTX Pulses table
-CREATE TABLE IF NOT EXISTS otx_pulses (
-    id VARCHAR(100) PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    author VARCHAR(255),
-    created TIMESTAMP,
-    modified TIMESTAMP,
-    tags JSONB,
-    tlp VARCHAR(20),
-    indicator_count INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- OTX PULSES TABLE
+CREATE TABLE otx_pulses (
+    id NVARCHAR(100) PRIMARY KEY,
+    name NVARCHAR(255) NOT NULL,
+    description NVARCHAR(MAX),
+    author NVARCHAR(255),
+    created DATETIME,
+    modified DATETIME,
+    tags NVARCHAR(MAX),
+    tlp NVARCHAR(20),
+    indicator_count INT DEFAULT 0,
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE()
 );
 
 CREATE INDEX idx_otx_created ON otx_pulses(created DESC);
 
--- Feed Status table
-CREATE TABLE IF NOT EXISTS feed_status (
-    feed_name VARCHAR(100) PRIMARY KEY,
-    last_update TIMESTAMP,
-    status VARCHAR(50),
-    record_count INTEGER DEFAULT 0,
-    error_message TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- FEED STATUS TABLE
+CREATE TABLE feed_status (
+    feed_name NVARCHAR(100) PRIMARY KEY,
+    last_update DATETIME,
+    status NVARCHAR(50),
+    record_count INT DEFAULT 0,
+    error_message NVARCHAR(MAX),
+    created_at DATETIME DEFAULT GETDATE(),
+    updated_at DATETIME DEFAULT GETDATE()
 );
 
--- Active Sessions table (for Redis session validation)
-CREATE TABLE IF NOT EXISTS active_sessions (
-    session_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    token_hash VARCHAR(255) NOT NULL,
-    expires_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    last_accessed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    ip_address INET,
-    user_agent TEXT
+-- ACTIVE SESSIONS TABLE
+CREATE TABLE active_sessions (
+    session_id UNIQUEIDENTIFIER PRIMARY KEY DEFAULT NEWID(),
+    user_id INT FOREIGN KEY REFERENCES users(id) ON DELETE CASCADE,
+    token_hash NVARCHAR(255) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at DATETIME DEFAULT GETDATE(),
+    last_accessed DATETIME DEFAULT GETDATE(),
+    ip_address NVARCHAR(45),
+    user_agent NVARCHAR(MAX)
 );
 
 CREATE INDEX idx_sessions_token_hash ON active_sessions(token_hash);
 CREATE INDEX idx_sessions_user_id ON active_sessions(user_id);
 
--- Function to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
+-- TRIGGERS TO UPDATE updated_at
+CREATE TRIGGER trg_update_users_timestamp
+ON users
+AFTER UPDATE
+AS
 BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
+    UPDATE users SET updated_at = GETDATE()
+    FROM inserted WHERE users.id = inserted.id;
 END;
-$$ language 'plpgsql';
 
--- Triggers
-CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER trg_update_cve_data_timestamp
+ON cve_data
+AFTER UPDATE
+AS
+BEGIN
+    UPDATE cve_data SET updated_at = GETDATE()
+    FROM inserted WHERE cve_data.id = inserted.id;
+END;
 
-CREATE TRIGGER update_cve_data_updated_at BEFORE UPDATE ON cve_data
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER trg_update_ip_threats_timestamp
+ON ip_threats
+AFTER UPDATE
+AS
+BEGIN
+    UPDATE ip_threats SET updated_at = GETDATE()
+    FROM inserted WHERE ip_threats.id = inserted.id;
+END;
 
-CREATE TRIGGER update_ip_threats_updated_at BEFORE UPDATE ON ip_threats
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER trg_update_otx_pulses_timestamp
+ON otx_pulses
+AFTER UPDATE
+AS
+BEGIN
+    UPDATE otx_pulses SET updated_at = GETDATE()
+    FROM inserted WHERE otx_pulses.id = inserted.id;
+END;
 
-CREATE TRIGGER update_otx_pulses_updated_at BEFORE UPDATE ON otx_pulses
-    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- Insert default admin user (password: admin123)
--- Hashed with bcrypt
+-- INSERT DEFAULT ADMIN USER
 INSERT INTO users (username, email, hashed_password, is_admin)
 VALUES (
     'admin',
-    'admin@threatintel.local',
-    '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5lW7Q3PGrw7YO',
-    TRUE
-) ON CONFLICT (username) DO NOTHING;
-
--- Grant permissions
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO threat_user;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO threat_user;
+    'admin@example.com',
+    '$2b$12$hashedpasswordgoeshere',  -- Replace with bcrypt hash
+    1
+);

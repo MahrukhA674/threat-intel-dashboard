@@ -1,13 +1,14 @@
 import redis
 import json
 from typing import Any, Optional, Union
-from ..core.config import settings
-
+from app.core.config import settings
+import os
 class RedisClient:
     def __init__(self):
         self.redis = redis.Redis(
             host=settings.REDIS_HOST,
             port=settings.REDIS_PORT,
+            password=os.getenv("REDIS_PASSWORD"), 
             db=settings.REDIS_DB,
             decode_responses=True
         )

@@ -17,7 +17,7 @@ test:
 
 # Run specific test file
 test-file:
-	docker-compose exec backend pytest tests/test_db.py
+	docker-compose exec backend pytest tests/test_db_connection.py
 
 # View logs
 logs:
