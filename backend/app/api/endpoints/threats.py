@@ -13,7 +13,7 @@ from app.services.cache_service import CacheService
 #)
 #from app.models import ThreatIntel  # Corrected import for the ThreatIntel model
 
-router = APIRouter()
+#router = APIRouter()
 
 #@router.get("/cves", response_model=List[CVEResponse])
 #async def get_cves(
