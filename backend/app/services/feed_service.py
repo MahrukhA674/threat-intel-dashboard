@@ -156,3 +156,4 @@ class FeedService:
         elif isinstance(item, OTXThreat):
             return 70  # Default confidence for OTX data
         return 50  # Default confidence
+
