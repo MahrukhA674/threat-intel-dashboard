@@ -1,8 +1,10 @@
 # Mock models for testing (replace with your actual models)
+import asyncio
 from asyncio.log import logger
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional
+from app.core.config import settings
 
 from backend.app.services.feed_service import FeedService
 
@@ -32,8 +34,7 @@ class IPThreat:
 # Mock settings for testing
 class Settings:
     ABUSEIPDB_API_URL = "https://api.abuseipdb.com/api/v2"
-    ABUSEIPDB_API_KEY = "YOUR_API_KEY_HERE"  # Replace with actual key
-
+    ABUSEIPDB_API_KEY = settings.ABUSEIPDB_API_KEY
 settings = Settings()
 
 # Mock cache service for testing
@@ -108,10 +109,7 @@ async def test_with_mock_data():
 
 async def test_with_real_api():
     """Test with real API (requires valid API key)"""
-    
-    if settings.ABUSEIPDB_API_KEY == "YOUR_API_KEY_HERE":
-        print("\n⚠️  Please set a valid ABUSEIPDB_API_KEY to test with real API")
-        return
+
     
     # Create real dependencies
     db = MockDB()  # Still using mock DB for testing
