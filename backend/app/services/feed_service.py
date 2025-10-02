@@ -121,39 +121,7 @@ class FeedService:
             self.db.rollback()
             raise Exception(f"Feed ingestion failed: {str(e)}")
 
-    a
 
-    def _determine_threat_type(self, item: Any) -> str:
-        """Determine threat type based on the item."""
-        if isinstance(item, CVE):
-            return "vulnerability"
-        elif isinstance(item, IPThreat):
-            return "malicious_ip"
-        elif isinstance(item, OTXThreat):
-            return "indicator"
-        return "unknown"
 
-    def _determine_severity(self, item: Any) -> str:
-        """Determine severity based on the item."""
-      
-        if isinstance(item, IPThreat):
-            score = item.confidence_score
-            if score >= 90:
-                return "critical"
-            elif score >= 70:
-                return "high"
-            elif score >= 50:
-                return "medium"
-            return "low"
-       
 
-    def _determine_confidence(self, item: Any) -> int:
-        """Determine confidence score based on the item."""
-        if isinstance(item, CVE):
-            return 100  # NVD data is considered highly reliable
-        elif isinstance(item, IPThreat):
-            return item.confidence_score
-        elif isinstance(item, OTXThreat):
-            return 70  # Default confidence for OTX data
-        return 50  # Default confidence
 

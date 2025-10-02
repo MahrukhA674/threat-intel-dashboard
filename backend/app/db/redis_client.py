@@ -94,6 +94,16 @@ class RedisClient:
                 self.redis.delete(*keys)
         except Exception as e:
             raise Exception(f"Failed to clear cache: {str(e)}")
+        
+    async def publish(self,channel: str, message: Any) -> None:
+        
+        await self.redis.publish(channel, json.dumps(message))
+
+    async def subscribe(channel: str, self) :
+        
+        pubsub = self.redis.pubsub()
+        await pubsub.subscribe(channel)
+        return pubsub
 
 # Create a global Redis client instance
 redis_client = RedisClient()
